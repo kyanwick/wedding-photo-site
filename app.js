@@ -28,19 +28,19 @@ function initUploadWidget() {
         tags: [TAG], // IMPORTANT: This tag allows us to fetch the list later
         styles: {
             palette: {
-                window: "#FFFFFF",
-                windowBorder: "#90A0B3",
-                tabIcon: "#8A7E72",
-                menuIcons: "#5A616A",
-                textDark: "#000000",
+                window: "#fdfbf7",
+                windowBorder: "#c5a059",
+                tabIcon: "#4a0404",
+                menuIcons: "#556b2f",
+                textDark: "#2c241b",
                 textLight: "#FFFFFF",
-                link: "#8A7E72",
-                action: "#FF620C",
-                inactiveTabIcon: "#0E2F5A",
+                link: "#4a0404",
+                action: "#4a0404",
+                inactiveTabIcon: "#8a7e72",
                 error: "#F44235",
-                inProgress: "#0078FF",
-                complete: "#20B832",
-                sourceBg: "#E4EBF1"
+                inProgress: "#c5a059",
+                complete: "#556b2f",
+                sourceBg: "#fdfbf7"
             }
         }
     }, (error, result) => { 
@@ -60,13 +60,16 @@ function initUploadWidget() {
     }, false);
 }
 
+// Global variables for lightbox navigation
+let galleryImages = [];
+let currentImageIndex = 0;
+
 // Load Gallery Images (for index.html)
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     if (!gallery) return; // Not on gallery page
 
     // Fetch list of images with the tag 'wedding'
-    // NOTE: You must enable "Resource list" in Cloudinary Settings -> Security -> Restricted image types (uncheck it)
     const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/list/${TAG}.json`;
 
     try {
@@ -83,16 +86,16 @@ async function loadGallery() {
             return;
         }
 
-        resources.forEach(res => {
+        // Store images for navigation
+        galleryImages = resources;
+
+        resources.forEach((res, index) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
             
-            // Construct optimized image URL for grid (w_800 for better quality on retina)
+            // Construct optimized image URL for grid
             const imgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_800,q_auto,f_auto/${res.public_id}.${res.format}`;
             
-            // Construct full size URL for lightbox (w_1600 or original if smaller)
-            const fullImgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,q_auto,f_auto/${res.public_id}.${res.format}`;
-
             const img = document.createElement('img');
             img.src = imgUrl;
             img.alt = "Wedding Photo";
@@ -102,35 +105,87 @@ async function loadGallery() {
             
             // Lightbox click event
             div.addEventListener('click', () => {
-                const lightbox = document.getElementById('lightbox');
-                const lightboxImg = document.getElementById('lightbox-img');
-                lightbox.style.display = "block";
-                lightboxImg.src = fullImgUrl;
+                openLightbox(index);
             });
 
             gallery.appendChild(div);
         });
 
-        // Lightbox Close Logic
-        const lightbox = document.getElementById('lightbox');
-        const closeBtn = document.querySelector('.close-lightbox');
-        
-        if (closeBtn) {
-            closeBtn.onclick = function() {
-                lightbox.style.display = "none";
-            }
-        }
-
-        window.onclick = function(event) {
-            if (event.target == lightbox) {
-                lightbox.style.display = "none";
-            }
-        }
+        setupLightboxControls();
 
     } catch (error) {
         console.error(error);
         gallery.innerHTML = `<div class="loading">Error loading photos. <br> ${error.message}</div>`;
     }
+}
+
+function openLightbox(index) {
+    currentImageIndex = index;
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    
+    updateLightboxImage();
+    
+    lightbox.style.display = "flex"; // Changed to flex for centering
+}
+
+function updateLightboxImage() {
+    const lightboxImg = document.getElementById('lightbox-img');
+    const res = galleryImages[currentImageIndex];
+    
+    // Reset animation to replay it
+    lightboxImg.style.animation = 'none';
+    lightboxImg.offsetHeight; /* trigger reflow */
+    lightboxImg.style.animation = null; 
+
+    const fullImgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,q_auto,f_auto/${res.public_id}.${res.format}`;
+    lightboxImg.src = fullImgUrl;
+}
+
+// Navigation function called by HTML buttons
+function changeSlide(n) {
+    currentImageIndex += n;
+    
+    // Loop navigation
+    if (currentImageIndex >= galleryImages.length) {
+        currentImageIndex = 0;
+    } else if (currentImageIndex < 0) {
+        currentImageIndex = galleryImages.length - 1;
+    }
+    
+    updateLightboxImage();
+}
+
+function setupLightboxControls() {
+    const lightbox = document.getElementById('lightbox');
+    const closeBtn = document.querySelector('.close-lightbox');
+    
+    // Close Button
+    if (closeBtn) {
+        closeBtn.onclick = function() {
+            lightbox.style.display = "none";
+        }
+    }
+
+    // Click outside to close
+    window.onclick = function(event) {
+        if (event.target == lightbox) {
+            lightbox.style.display = "none";
+        }
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', function(e) {
+        if (lightbox.style.display === "flex") {
+            if (e.key === "ArrowLeft") {
+                changeSlide(-1);
+            } else if (e.key === "ArrowRight") {
+                changeSlide(1);
+            } else if (e.key === "Escape") {
+                lightbox.style.display = "none";
+            }
+        }
+    });
 }
 
 // Run gallery loader if on index page
