@@ -87,20 +87,45 @@ async function loadGallery() {
             const div = document.createElement('div');
             div.className = 'gallery-item';
             
-            // Construct optimized image URL
-            // w_600: Resize width to 600px
-            // q_auto: Auto quality
-            // f_auto: Auto format (webp/avif)
-            const imgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_600,q_auto,f_auto/${res.public_id}.${res.format}`;
+            // Construct optimized image URL for grid (w_800 for better quality on retina)
+            const imgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_800,q_auto,f_auto/${res.public_id}.${res.format}`;
             
+            // Construct full size URL for lightbox (w_1600 or original if smaller)
+            const fullImgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,q_auto,f_auto/${res.public_id}.${res.format}`;
+
             const img = document.createElement('img');
             img.src = imgUrl;
             img.alt = "Wedding Photo";
-            img.loading = "lazy"; // Lazy load for performance
+            img.loading = "lazy"; 
 
             div.appendChild(img);
+            
+            // Lightbox click event
+            div.addEventListener('click', () => {
+                const lightbox = document.getElementById('lightbox');
+                const lightboxImg = document.getElementById('lightbox-img');
+                lightbox.style.display = "block";
+                lightboxImg.src = fullImgUrl;
+            });
+
             gallery.appendChild(div);
         });
+
+        // Lightbox Close Logic
+        const lightbox = document.getElementById('lightbox');
+        const closeBtn = document.querySelector('.close-lightbox');
+        
+        if (closeBtn) {
+            closeBtn.onclick = function() {
+                lightbox.style.display = "none";
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target == lightbox) {
+                lightbox.style.display = "none";
+            }
+        }
 
     } catch (error) {
         console.error(error);
