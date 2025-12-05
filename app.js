@@ -8,8 +8,14 @@ const TAG = 'wedding'; // The tag used in your upload preset
 
 // Initialize Upload Widget (for upload.html)
 function initUploadWidget() {
-    if (CLOUD_NAME === 'dzj98hms8') {
-        alert('Please configure your Cloudinary Cloud Name in app.js!');
+    const uploadButton = document.getElementById("upload_widget");
+    if (!uploadButton) return; // Not on upload page
+
+    console.log("Initializing Upload Widget...");
+
+    if (typeof cloudinary === "undefined") {
+        console.error("Cloudinary script not loaded");
+        alert("Error: Cloudinary script not loaded. Check your internet connection.");
         return;
     }
 
@@ -38,13 +44,18 @@ function initUploadWidget() {
             }
         }
     }, (error, result) => { 
-        if (!error && result && result.event === "success") { 
+        if (error) {
+            console.error("Upload Widget Error:", error);
+            return;
+        }
+        if (result && result.event === "success") { 
             console.log('Done! Here is the image info: ', result.info); 
             document.getElementById('upload-status').innerHTML += `<p>Uploaded: ${result.info.original_filename}</p>`;
         }
     });
 
-    document.getElementById("upload_widget").addEventListener("click", function(){
+    uploadButton.addEventListener("click", function(){
+        console.log("Opening widget...");
         myWidget.open();
     }, false);
 }
@@ -53,11 +64,6 @@ function initUploadWidget() {
 async function loadGallery() {
     const gallery = document.getElementById('gallery');
     if (!gallery) return; // Not on gallery page
-
-    if (CLOUD_NAME === 'dzj98hms8') {
-        gallery.innerHTML = '<div class="loading">Please configure your Cloudinary Cloud Name in app.js!</div>';
-        return;
-    }
 
     // Fetch list of images with the tag 'wedding'
     // NOTE: You must enable "Resource list" in Cloudinary Settings -> Security -> Restricted image types (uncheck it)
@@ -105,4 +111,5 @@ async function loadGallery() {
 // Run gallery loader if on index page
 document.addEventListener('DOMContentLoaded', () => {
     loadGallery();
+    initUploadWidget();
 });
