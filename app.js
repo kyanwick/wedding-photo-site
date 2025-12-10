@@ -133,13 +133,26 @@ function updateLightboxImage() {
     const lightboxImg = document.getElementById('lightbox-img');
     const res = galleryImages[currentImageIndex];
     
-    // Reset animation to replay it
-    lightboxImg.style.animation = 'none';
-    lightboxImg.offsetHeight; /* trigger reflow */
-    lightboxImg.style.animation = null; 
+    // 1. Hide image immediately to indicate change
+    lightboxImg.style.opacity = '0';
+    lightboxImg.style.transition = 'opacity 0.2s ease';
 
     const fullImgUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_1600,q_auto,f_auto/${res.public_id}.${res.format}`;
-    lightboxImg.src = fullImgUrl;
+    
+    // 2. Create a temporary image to preload
+    const tempImg = new Image();
+    tempImg.src = fullImgUrl;
+    
+    tempImg.onload = function() {
+        // 3. Once loaded, update the source and show it
+        lightboxImg.src = fullImgUrl;
+        lightboxImg.style.opacity = '1';
+        
+        // 4. Trigger the zoom animation
+        lightboxImg.style.animation = 'none';
+        lightboxImg.offsetHeight; /* trigger reflow */
+        lightboxImg.style.animation = null; 
+    };
 }
 
 // Navigation function called by HTML buttons
